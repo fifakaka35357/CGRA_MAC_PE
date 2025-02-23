@@ -36,7 +36,8 @@
  */
 
 module user_proj_example #(
-    parameter BITS = 16
+    parameter BITS = 32,
+    parameter WISHBONE_BASE_ADDR = 32'h30000000
 )(
 `ifdef USE_POWER_PINS
     inout vccd1,	// User area 1 1.8V supply
@@ -61,96 +62,224 @@ module user_proj_example #(
     input  [127:0] la_oenb,
 
     // IOs
-    input  [BITS-1:0] io_in,
-    output [BITS-1:0] io_out,
-    output [BITS-1:0] io_oeb,
+    input  [`MPRJ_IO_PADS-1:0] io_in,
+    output [`MPRJ_IO_PADS-1:0] io_out,
+    output [`MPRJ_IO_PADS-1:0] io_oeb,
 
     // IRQ
     output [2:0] irq
 );
-    wire clk;
-    wire rst;
 
-    wire [BITS-1:0] rdata; 
-    wire [BITS-1:0] wdata;
-    wire [BITS-1:0] count;
-
-    wire valid;
-    wire [3:0] wstrb;
-    wire [BITS-1:0] la_write;
-
-    // WB MI A
-    assign valid = wbs_cyc_i && wbs_stb_i; 
-    assign wstrb = wbs_sel_i & {4{wbs_we_i}};
-    assign wbs_dat_o = {{(32-BITS){1'b0}}, rdata};
-    assign wdata = wbs_dat_i[BITS-1:0];
-
-    // IO
-    assign io_out = count;
-    assign io_oeb = {(BITS){rst}};
-
-    // IRQ
-    assign irq = 3'b000;	// Unused
-
-    // LA
-    assign la_data_out = {{(128-BITS){1'b0}}, count};
-    // Assuming LA probes [63:32] are for controlling the count register  
-    assign la_write = ~la_oenb[63:64-BITS] & ~{BITS{valid}};
-    // Assuming LA probes [65:64] are for controlling the count clk & reset  
-    assign clk = (~la_oenb[64]) ? la_data_in[64]: wb_clk_i;
-    assign rst = (~la_oenb[65]) ? la_data_in[65]: wb_rst_i;
-
-    counter #(
-        .BITS(BITS)
-    ) counter(
-        .clk(clk),
-        .reset(rst),
-        .ready(wbs_ack_o),
-        .valid(valid),
-        .rdata(rdata),
-        .wdata(wbs_dat_i[BITS-1:0]),
-        .wstrb(wstrb),
-        .la_write(la_write),
-        .la_input(la_data_in[63:64-BITS]),
-        .count(count)
+// ==============================================================================
+// Wishbone control
+// ==============================================================================
+    wire [31:0] CGRA_read_config_data;
+    wire [31:0] CGRA_config_config_addr;
+	wire [31:0] CGRA_config_config_data;
+	wire        CGRA_config_read;
+	wire        CGRA_config_write;
+    wire  [3:0] CGRA_stall;
+    wire  [1:0] message;
+    // clock/reset mux
+    wire sel = la_data_in[96];
+    wire ckmux_clk;
+    wire ckmux_rst;
+    ckmux ckmux_u0 (
+      .select  ( sel       )
+    , .clk0    ( wb_clk_i  )
+    , .clk1    ( io_in[34] )
+    , .out_clk ( ckmux_clk )
     );
+    assign ckmux_rst = (sel) ? io_in[35] : wb_rst_i;
 
-endmodule
-
-module counter #(
-    parameter BITS = 16
-)(
-    input clk,
-    input reset,
-    input valid,
-    input [3:0] wstrb,
-    input [BITS-1:0] wdata,
-    input [BITS-1:0] la_write,
-    input [BITS-1:0] la_input,
-    output reg ready,
-    output reg [BITS-1:0] rdata,
-    output reg [BITS-1:0] count
+    wishbone_ctl #(
+        .WISHBONE_BASE_ADDR(WISHBONE_BASE_ADDR)
+    ) wbs_ctl_u0 (
+    // wishbone input
+      .wb_clk_i  ( ckmux_clk  )
+    , .wb_rst_i  ( ckmux_rst  )
+    , .wbs_stb_i ( wbs_stb_i )
+    , .wbs_cyc_i ( wbs_cyc_i )
+    , .wbs_we_i  ( wbs_we_i  )
+    , .wbs_sel_i ( wbs_sel_i )
+    , .wbs_dat_i ( wbs_dat_i )
+    , .wbs_adr_i ( wbs_adr_i )
+    // wishbone output
+    , .wbs_ack_o ( wbs_ack_o )
+    , .wbs_dat_o ( wbs_dat_o )
+    // input from CGRA
+    , .CGRA_read_config_data ( CGRA_read_config_data )
+    // output
+    , .CGRA_config_config_addr( CGRA_config_config_addr )
+	, .CGRA_config_config_data( CGRA_config_config_data )
+	, .CGRA_config_read       ( CGRA_config_read        )
+	, .CGRA_config_write      ( CGRA_config_write       )
+    , .CGRA_stall             ( CGRA_stall              )
+    , .message                ( message                 )
 );
 
-    always @(posedge clk) begin
-        if (reset) begin
-            count <= 1'b0;
-            ready <= 1'b0;
-        end else begin
-            ready <= 1'b0;
-            if (~|la_write) begin
-                count <= count + 1'b1;
-            end
-            if (valid && !ready) begin
-                ready <= 1'b1;
-                rdata <= count;
-                if (wstrb[0]) count[7:0]   <= wdata[7:0];
-                if (wstrb[1]) count[15:8]  <= wdata[15:8];
-            end else if (|la_write) begin
-                count <= la_write & la_input;
-            end
-        end
+assign io_out[36] = message[0];
+assign io_out[37] = message[1];
+assign io_out[34] = 1'b0;
+assign io_out[35] = 1'b0;
+
+
+/* Manually add buffers, these buffers are used to avoid hold-time violation in final array level PD */
+// The power pins are essential for simulation
+localparam P = 8;
+wire [31:0] POHAN_BUF_CGRA_config_config_data [0:P-1];
+wire [31:0] POHAN_BUF_CGRA_config_config_addr [0:P-1];
+// wire [3:0]  POHAN_BUF_CGRA_stall [0:P-1];
+wire [3:0]  POHAN_BUF_CGRA_stall;           //  <--  *替换成这行*，这是 *标量* wire 声明
+genvar i, j, k;
+
+generate
+    // stage 0
+    for (j=0; j<32; j=j+1) begin : BUF_STAGE_0_CONFIG_BIT
+        // data
+        sky130_fd_sc_hd__buf_12 POHAN_BUF_CONFIG_DATA (
+        `ifdef USE_POWER_PINS
+            .VPWR(vccd1),
+            .VGND(vssd1),
+        `endif
+            .A(CGRA_config_config_data[j]),
+            .X(POHAN_BUF_CGRA_config_config_data[0][j])
+        );
+        // addr
+        sky130_fd_sc_hd__buf_12 POHAN_BUF_CONFIG_ADDR (
+        `ifdef USE_POWER_PINS
+            .VPWR(vccd1),
+            .VGND(vssd1),
+        `endif
+            .A(CGRA_config_config_addr[j]),
+            .X(POHAN_BUF_CGRA_config_config_addr[0][j])
+        );
     end
 
+    // stage 1~(P-1)
+    for (i=0; i<(P-1); i=i+1) begin : BUF_STAGE
+        for (j=0; j<32; j=j+1) begin : CONFIG_BIT
+            // data
+            sky130_fd_sc_hd__buf_12 POHAN_BUF_CONFIG_DATA (
+            `ifdef USE_POWER_PINS
+                .VPWR(vccd1),
+                .VGND(vssd1),
+            `endif
+                .A(POHAN_BUF_CGRA_config_config_data[i][j]),
+                .X(POHAN_BUF_CGRA_config_config_data[i+1][j])
+            );
+            sky130_fd_sc_hd__buf_12 POHAN_BUF_CONFIG_ADDR (
+            `ifdef USE_POWER_PINS
+                .VPWR(vccd1),
+                .VGND(vssd1),
+            `endif
+                .A(POHAN_BUF_CGRA_config_config_addr[i][j]),
+                .X(POHAN_BUF_CGRA_config_config_addr[i+1][j])
+            );
+        end
+    end
+endgenerate
+
+
+// Behavioral buffer implementation for POHAN_BUF_STALL
+wire [3:0] POHAN_BUF_CGRA_stall_stage_0;
+wire [3:0] POHAN_BUF_CGRA_stall_stage_1;
+wire [3:0] POHAN_BUF_CGRA_stall_stage_2;
+wire [3:0] POHAN_BUF_CGRA_stall_stage_3;
+wire [3:0] POHAN_BUF_CGRA_stall_stage_4;
+wire [3:0] POHAN_BUF_CGRA_stall_stage_5;
+wire [3:0] POHAN_BUF_CGRA_stall_stage_6;
+wire [3:0] POHAN_BUF_CGRA_stall_stage_7;
+
+assign POHAN_BUF_CGRA_stall_stage_0 = CGRA_stall;
+assign POHAN_BUF_CGRA_stall_stage_1 = POHAN_BUF_CGRA_stall_stage_0;
+assign POHAN_BUF_CGRA_stall_stage_2 = POHAN_BUF_CGRA_stall_stage_1;
+assign POHAN_BUF_CGRA_stall_stage_3 = POHAN_BUF_CGRA_stall_stage_2;
+assign POHAN_BUF_CGRA_stall_stage_4 = POHAN_BUF_CGRA_stall_stage_3;
+assign POHAN_BUF_CGRA_stall_stage_5 = POHAN_BUF_CGRA_stall_stage_4;
+assign POHAN_BUF_CGRA_stall_stage_6 = POHAN_BUF_CGRA_stall_stage_5;
+assign POHAN_BUF_CGRA_stall_stage_7 = POHAN_BUF_CGRA_stall_stage_6;
+
+assign POHAN_BUF_CGRA_stall = POHAN_BUF_CGRA_stall_stage_7; // Assign the output array
+
+
+// ==============================================================================
+// IO Logic
+// ==============================================================================
+
+    wire [15:0] glb2io_16_X00_Y00 = io_in[15:0];
+    // wire [15:0] glb2io_16_X01_Y00 = io_in[32:17];
+    wire        glb2io_1_X00_Y00  = io_in[16];
+    // wire        glb2io_1_X01_Y00  = io_in[33];
+    wire [15:0] io2glb_16_X00_Y00;
+    // wire [15:0] io2glb_16_X01_Y00;
+    wire        io2glb_1_X00_Y00;
+    // wire        io2glb_1_X01_Y00;
+
+    assign io_out[15:0]  = io2glb_16_X00_Y00;
+    // assign io_out[32:17] = io2glb_16_X01_Y00;
+    assign io_out[16]    = io2glb_1_X00_Y00;
+    // assign io_out[33]    = io2glb_1_X01_Y00;
+    assign io_out[33:17] = 17'b0;  // 给未使用的位赋0
+
+    Interconnect Interconnect_inst0 (
+        // common
+        .clk                  ( ckmux_clk             ),
+        .reset                ( ckmux_rst             ),
+        // .stall                ( POHAN_BUF_CGRA_stall[P-1]            ), // 注意这里仍然使用 POHAN_BUF_CGRA_stall[P-1]
+        .stall                ( POHAN_BUF_CGRA_stall            ),     //  <--  *替换成这行*，直接使用标量信号名，不再使用数组索引
+        .read_config_data     ( CGRA_read_config_data ),
+        // configuration
+        .config_0_config_addr ( POHAN_BUF_CGRA_config_config_addr[P-1] ), // broadcast config
+        .config_0_config_data ( POHAN_BUF_CGRA_config_config_data[P-1] ), // broadcast config
+        .config_0_read        ( CGRA_config_read        ), // broadcast config
+        .config_0_write       ( CGRA_config_write       ), // broadcast config
+        .config_1_config_addr ( POHAN_BUF_CGRA_config_config_addr[P-1] ), // broadcast config
+        .config_1_config_data ( POHAN_BUF_CGRA_config_config_data[P-1] ), // broadcast config
+        .config_1_read        ( CGRA_config_read        ), // broadcast config
+        .config_1_write       ( CGRA_config_write       ), // broadcast config
+        .config_2_config_addr ( POHAN_BUF_CGRA_config_config_addr[P-1] ), // broadcast config
+        .config_2_config_data ( POHAN_BUF_CGRA_config_config_data[P-1] ), // broadcast config
+        .config_2_read        ( CGRA_config_read        ), // broadcast config
+        .config_2_write       ( CGRA_config_write       ), // broadcast config
+        .config_3_config_addr ( POHAN_BUF_CGRA_config_config_addr[P-1] ), // broadcast config
+        .config_3_config_data ( POHAN_BUF_CGRA_config_config_data[P-1] ), // broadcast config
+        .config_3_read        ( CGRA_config_read        ), // broadcast config
+        .config_3_write       ( CGRA_config_write       ), // broadcast config
+        // inputs
+        .glb2io_16_X00_Y00    ( glb2io_16_X00_Y00 ),
+        // .glb2io_16_X01_Y00    ( glb2io_16_X01_Y00 ),
+        .glb2io_1_X00_Y00     ( glb2io_1_X00_Y00  ),
+        // .glb2io_1_X01_Y00     ( glb2io_1_X01_Y00  ),
+        // outputs
+        .io2glb_16_X00_Y00    ( io2glb_16_X00_Y00 ),
+        // .io2glb_16_X01_Y00    ( io2glb_16_X01_Y00 ),
+        .io2glb_1_X00_Y00     ( io2glb_1_X00_Y00  ) // ,
+        // .io2glb_1_X01_Y00     ( io2glb_1_X01_Y00  ),
+        // not used
+        // .glb2io_16_X02_Y00    ( 16'd0 ), // not used
+        // .glb2io_16_X03_Y00    ( 16'd0 ), // not used
+        // .glb2io_1_X02_Y00     ( 1'b0  ), // not used
+        // .glb2io_1_X03_Y00     ( 1'b0  ), // not used
+        // .io2glb_16_X02_Y00    (       ), // not used
+        // .io2glb_16_X03_Y00    (       ), // not used
+        // .io2glb_1_X02_Y00     (       ), // not used
+        // .io2glb_1_X03_Y00     (       )  // not used
+    );
+
+    // IO direction
+    // assign io_oeb[16:0]  = {17{1'b1}};
+    // assign io_oeb[33:17] = {17{1'b0}};
+    // assign io_oeb[34]  = 1'b1; // io_clk
+    // assign io_oeb[35]  = 1'b1; // io_reset
+    // assign io_oeb[36]  = 1'b0; // config done
+    // assign io_oeb[37]  = 1'b0; // test
+    assign io_oeb = la_data_in[37:0];
+
+    // Unused
+    assign irq = 3'b000;
+    assign la_data_out = 128'd0;
+
 endmodule
+
 `default_nettype wire

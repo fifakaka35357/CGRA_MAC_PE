@@ -83,10 +83,16 @@ module user_project_wrapper #(
 /*--------------------------------------*/
 
 user_proj_example mprj (
-`ifdef USE_POWER_PINS
+    `ifdef USE_POWER_PINS
+	.vdda1(vdda1),	// User area 1 3.3V power
+	.vdda2(vdda2),	// User area 2 3.3V power
+	.vssa1(vssa1),	// User area 1 analog ground
+	.vssa2(vssa2),	// User area 2 analog ground
 	.vccd1(vccd1),	// User area 1 1.8V power
+	.vccd2(vccd2),	// User area 2 1.8V power
 	.vssd1(vssd1),	// User area 1 digital ground
-`endif
+	.vssd2(vssd2),	// User area 2 digital ground
+    `endif
 
     .wb_clk_i(wb_clk_i),
     .wb_rst_i(wb_rst_i),
@@ -110,9 +116,9 @@ user_proj_example mprj (
 
     // IO Pads
 
-    .io_in ({io_in[37:30],io_in[7:0]}),
-    .io_out({io_out[37:30],io_out[7:0]}),
-    .io_oeb({io_oeb[37:30],io_oeb[7:0]}),
+    .io_in (io_in),
+    .io_out(io_out),
+    .io_oeb(io_oeb),
 
     // IRQ
     .irq(user_irq)
