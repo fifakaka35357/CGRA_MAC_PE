@@ -7,7 +7,7 @@ make setup
 # sta时序报错，添加代码“/// sta-blackbox”到如下目录“dependencies/pdks/sky130A/libs.ref/sky130_fd_sc_hd/verilog/“的“sky130_fd_sc_hd.v“中，位置为第18行
 # 因为编译的时候会遇到sta时序问题， 通过屏蔽此处时序分析绕过去，但不会影响后期的流片
 
-FILE_PATH="$HOME/Project/Tape/My_Proj/CGRA_MAC_PE/dependencies/pdks/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v"
+FILE_PATH="$(pwd)/dependencies/pdks/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v"
 BACKUP_PATH="$FILE_PATH.backup"
 
 # 备份原文件
