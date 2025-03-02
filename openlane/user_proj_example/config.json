@@ -6,7 +6,7 @@
         "dir::../../verilog/rtl/user_proj_example.v",
         "dir::../../verilog/rtl/ckmux.v",
         "dir::../../verilog/rtl/wishbone_ctl.v",
-        "dir::../../verilog/rtl/garnet_3t_1x2_nopipe.v"
+        "dir::../../verilog/rtl/garnet_3t_4x2_nopipe.v"
     ],
     "RUN_LINTER": 0,
     "PDK": "sky130A",
@@ -16,22 +16,22 @@
     "VERILOG_FILES_BLACKBOX": [
         "dir::../../dependencies/pdks/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v"
     ],
-    "CLOCK_PERIOD": 100,
+    "CLOCK_PERIOD": 50,
     "CLOCK_PORT": "wb_clk_i",
     "CLOCK_NET": "counter.clk",
     "FP_SIZING": "absolute",
     "DIE_AREA": "0 0 2800 1760",
     "FP_PIN_ORDER_CFG": "dir::pin_order.cfg",
     "MAX_TRANSITION_CONSTRAINT": 1.0,
-    "MAX_FANOUT_CONSTRAINT": 8,
-    "PL_TARGET_DENSITY": 0.26,
+    "MAX_FANOUT_CONSTRAINT": 16,
+    "PL_TARGET_DENSITY": 0.55,
     "PL_RESIZER_SETUP_SLACK_MARGIN": 0.4,
     "GLB_RESIZER_SETUP_SLACK_MARGIN": 0.2,
     "GLB_RESIZER_HOLD_SLACK_MARGIN": 0.2,
     "PL_RESIZER_HOLD_SLACK_MARGIN": 0.4,
     "SYNTH_CLOCK_UNCERTAINTY": 0.2,
     "MAGIC_DEF_LABELS": 0,
-    "SYNTH_BUFFERING": 0,
+    "SYNTH_BUFFERING": 1,
     "RUN_HEURISTIC_DIODE_INSERTION": 1,
     "HEURISTIC_ANTENNA_THRESHOLD": 110,    
     "GRT_REPAIR_ANTENNAS": 1,
@@ -47,7 +47,7 @@
         "FP_CORE_UTIL": 45,
         "RT_MAX_LAYER": "met4",
         "scl::sky130_fd_sc_hd": {
-            "CLOCK_PERIOD": 100
+            "CLOCK_PERIOD": 50
         },
         "scl::sky130_fd_sc_hdll": {
             "CLOCK_PERIOD": 10
