@@ -208,19 +208,19 @@ assign POHAN_BUF_CGRA_stall = POHAN_BUF_CGRA_stall_stage_7; // Assign the output
 // ==============================================================================
 
     wire [15:0] glb2io_16_X00_Y00 = io_in[15:0];
-    // wire [15:0] glb2io_16_X01_Y00 = io_in[32:17];
+    wire [15:0] glb2io_16_X01_Y00 = io_in[32:17];
     wire        glb2io_1_X00_Y00  = io_in[16];
-    // wire        glb2io_1_X01_Y00  = io_in[33];
+    wire        glb2io_1_X01_Y00  = io_in[33];
     wire [15:0] io2glb_16_X00_Y00;
-    // wire [15:0] io2glb_16_X01_Y00;
+    wire [15:0] io2glb_16_X01_Y00;
     wire        io2glb_1_X00_Y00;
-    // wire        io2glb_1_X01_Y00;
+    wire        io2glb_1_X01_Y00;
 
     assign io_out[15:0]  = io2glb_16_X00_Y00;
-    // assign io_out[32:17] = io2glb_16_X01_Y00;
+    assign io_out[32:17] = io2glb_16_X01_Y00;
     assign io_out[16]    = io2glb_1_X00_Y00;
-    // assign io_out[33]    = io2glb_1_X01_Y00;
-    assign io_out[33:17] = 17'b0;  // 给未使用的位赋0
+    assign io_out[33]    = io2glb_1_X01_Y00;
+    // assign io_out[33:17] = 17'b0;  // 给未使用的位赋0
 
     Interconnect Interconnect_inst0 (
         // common
@@ -248,14 +248,14 @@ assign POHAN_BUF_CGRA_stall = POHAN_BUF_CGRA_stall_stage_7; // Assign the output
         .config_3_write       ( CGRA_config_write       ), // broadcast config
         // inputs
         .glb2io_16_X00_Y00    ( glb2io_16_X00_Y00 ),
-        // .glb2io_16_X01_Y00    ( glb2io_16_X01_Y00 ),
+        .glb2io_16_X01_Y00    ( glb2io_16_X01_Y00 ),
         .glb2io_1_X00_Y00     ( glb2io_1_X00_Y00  ),
-        // .glb2io_1_X01_Y00     ( glb2io_1_X01_Y00  ),
+        .glb2io_1_X01_Y00     ( glb2io_1_X01_Y00  ),
         // outputs
         .io2glb_16_X00_Y00    ( io2glb_16_X00_Y00 ),
-        // .io2glb_16_X01_Y00    ( io2glb_16_X01_Y00 ),
-        .io2glb_1_X00_Y00     ( io2glb_1_X00_Y00  ) // ,
-        // .io2glb_1_X01_Y00     ( io2glb_1_X01_Y00  ),
+        .io2glb_16_X01_Y00    ( io2glb_16_X01_Y00 ),
+        .io2glb_1_X00_Y00     ( io2glb_1_X00_Y00  ),
+        .io2glb_1_X01_Y00     ( io2glb_1_X01_Y00  )
         // not used
         // .glb2io_16_X02_Y00    ( 16'd0 ), // not used
         // .glb2io_16_X03_Y00    ( 16'd0 ), // not used
