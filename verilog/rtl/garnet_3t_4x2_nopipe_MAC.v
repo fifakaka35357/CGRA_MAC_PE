@@ -6394,10 +6394,16 @@ module LakeTop (
 	end
 	always @(*) mem_ctrl_strg_ub_vec_flat_data_from_strg_lifted = memory_0_data_out_p1;
 	assign config_data_in_shrt = config_data_in[15:0];
+	// function automatic [31:0] sv2v_cast_32;
+	// 	input reg [31:0] inp;
+	// 	sv2v_cast_32 = inp;
+	// endfunction
+
 	function automatic [31:0] sv2v_cast_32;
-		input reg [31:0] inp;
-		sv2v_cast_32 = inp;
+		input reg [15:0] inp;  // 改为16位
+		sv2v_cast_32 = {{16{1'b0}}, inp};  // 零扩展到32位
 	endfunction
+
 	assign config_data_out[0+:32] = sv2v_cast_32(config_data_out_shrt[0+:16]);
 	assign config_seq_clk = gclk;
 	assign config_seq_clk_en = clk_en | |config_en;
