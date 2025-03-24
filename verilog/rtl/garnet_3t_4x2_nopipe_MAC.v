@@ -25908,7 +25908,7 @@ module PE (
 	wire magma_Bit_and_inst1_out;
 	wire magma_Bits_3_eq_inst0_out;
 	wire magma_Bits_3_eq_inst1_out;
-	Combinational_Subword_MAC ALU_inst0(
+	Combinational_MAC ALU_inst0(
 		.alu(inst[7:0]),
 		.signed_(inst[8]),
 		.a(RegisterMode_inst0_O0),

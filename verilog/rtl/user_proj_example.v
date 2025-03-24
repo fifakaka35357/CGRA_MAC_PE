@@ -96,8 +96,8 @@ module user_proj_example #(
         .WISHBONE_BASE_ADDR(WISHBONE_BASE_ADDR)
     ) wbs_ctl_u0 (
     // wishbone input
-      .wb_clk_i  ( ckmux_clk  )
-    , .wb_rst_i  ( ckmux_rst  )
+      .wb_clk_i  ( wb_clk_i  )
+    , .wb_rst_i  ( wb_rst_i  )
     , .wbs_stb_i ( wbs_stb_i )
     , .wbs_cyc_i ( wbs_cyc_i )
     , .wbs_we_i  ( wbs_we_i  )
@@ -224,8 +224,8 @@ assign POHAN_BUF_CGRA_stall = POHAN_BUF_CGRA_stall_stage_7; // Assign the output
 
     Interconnect Interconnect_inst0 (
         // common
-        .clk                  ( ckmux_clk             ),
-        .reset                ( ckmux_rst             ),
+        .clk                  ( wb_clk_i             ),
+        .reset                ( wb_rst_i             ),
         // .stall                ( POHAN_BUF_CGRA_stall[P-1]            ), // 注意这里仍然使用 POHAN_BUF_CGRA_stall[P-1]
         .stall                ( POHAN_BUF_CGRA_stall            ),     //  <--  *替换成这行*，直接使用标量信号名，不再使用数组索引
         .read_config_data     ( CGRA_read_config_data ),
