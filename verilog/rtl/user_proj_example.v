@@ -57,14 +57,14 @@ module user_proj_example #(
     output [31:0] wbs_dat_o,
 
     // Logic Analyzer Signals
-    input  [127:0] la_data_in,
-    output [127:0] la_data_out,
-    input  [127:0] la_oenb,
+    // input  [127:0] la_data_in,
+    // output [127:0] la_data_out,
+    // input  [127:0] la_oenb,
 
     // IOs
-    input  [`MPRJ_IO_PADS-1:0] io_in,
-    output [`MPRJ_IO_PADS-1:0] io_out,
-    output [`MPRJ_IO_PADS-1:0] io_oeb,
+    // input  [`MPRJ_IO_PADS-1:0] io_in,
+    // output [`MPRJ_IO_PADS-1:0] io_out,
+    // output [`MPRJ_IO_PADS-1:0] io_oeb,
 
     // IRQ
     output [2:0] irq
@@ -79,18 +79,18 @@ module user_proj_example #(
 	wire        CGRA_config_read;
 	wire        CGRA_config_write;
     wire  [3:0] CGRA_stall;
-    wire  [1:0] message;
+    // wire  [1:0] message;
     // clock/reset mux
-    wire sel = la_data_in[96];
-    wire ckmux_clk;
-    wire ckmux_rst;
-    ckmux ckmux_u0 (
-      .select  ( sel       )
-    , .clk0    ( wb_clk_i  )
-    , .clk1    ( io_in[34] )
-    , .out_clk ( ckmux_clk )
-    );
-    assign ckmux_rst = (sel) ? io_in[35] : wb_rst_i;
+    // wire sel = la_data_in[96];
+    // wire ckmux_clk;
+    // wire ckmux_rst;
+    // ckmux ckmux_u0 (
+    //   .select  ( sel       )
+    // , .clk0    ( wb_clk_i  )
+    // , .clk1    ( io_in[34] )
+    // , .out_clk ( ckmux_clk )
+    // );
+    // assign ckmux_rst = (sel) ? io_in[35] : wb_rst_i;
 
     wishbone_ctl #(
         .WISHBONE_BASE_ADDR(WISHBONE_BASE_ADDR)
@@ -115,14 +115,14 @@ module user_proj_example #(
 	, .CGRA_config_read       ( CGRA_config_read        )
 	, .CGRA_config_write      ( CGRA_config_write       )
     , .CGRA_stall             ( CGRA_stall              )
-    , .message                ( message                 )
+    // , .message                ( message                 )
 );
 
-assign io_out[36] = message[0];
-assign io_out[37] = message[1];
-assign io_out[34] = 1'b0;
-assign io_out[35] = 1'b0;
-
+// assign io_out[36] = message[0];
+// assign io_out[37] = message[1];
+// assign io_out[34] = 1'b0;
+// assign io_out[35] = 1'b0;
+assign irq = 3'b000;
 
 /* Manually add buffers, these buffers are used to avoid hold-time violation in final array level PD */
 // The power pins are essential for simulation
@@ -207,20 +207,20 @@ assign POHAN_BUF_CGRA_stall = POHAN_BUF_CGRA_stall_stage_7; // Assign the output
 // IO Logic
 // ==============================================================================
 
-    wire [15:0] glb2io_16_X00_Y00 = io_in[15:0];
-    wire [15:0] glb2io_16_X01_Y00 = io_in[32:17];
-    wire        glb2io_1_X00_Y00  = io_in[16];
-    wire        glb2io_1_X01_Y00  = io_in[33];
-    wire [15:0] io2glb_16_X00_Y00;
-    wire [15:0] io2glb_16_X01_Y00;
-    wire        io2glb_1_X00_Y00;
-    wire        io2glb_1_X01_Y00;
+    // wire [15:0] glb2io_16_X00_Y00 = io_in[15:0];
+    // wire [15:0] glb2io_16_X01_Y00 = io_in[32:17];
+    // wire        glb2io_1_X00_Y00  = io_in[16];
+    // wire        glb2io_1_X01_Y00  = io_in[33];
+    // wire [15:0] io2glb_16_X00_Y00;
+    // wire [15:0] io2glb_16_X01_Y00;
+    // wire        io2glb_1_X00_Y00;
+    // wire        io2glb_1_X01_Y00;
 
-    assign io_out[15:0]  = io2glb_16_X00_Y00;
-    assign io_out[32:17] = io2glb_16_X01_Y00;
-    assign io_out[16]    = io2glb_1_X00_Y00;
-    assign io_out[33]    = io2glb_1_X01_Y00;
-    // assign io_out[33:17] = 17'b0;  // 给未使用的位赋0
+    // assign io_out[15:0]  = io2glb_16_X00_Y00;
+    // assign io_out[32:17] = io2glb_16_X01_Y00;
+    // assign io_out[16]    = io2glb_1_X00_Y00;
+    // assign io_out[33]    = io2glb_1_X01_Y00;
+    // // assign io_out[33:17] = 17'b0;  // 给未使用的位赋0
 
     Interconnect Interconnect_inst0 (
         // common
@@ -247,15 +247,23 @@ assign POHAN_BUF_CGRA_stall = POHAN_BUF_CGRA_stall_stage_7; // Assign the output
         .config_3_read        ( CGRA_config_read        ), // broadcast config
         .config_3_write       ( CGRA_config_write       ), // broadcast config
         // inputs
-        .glb2io_16_X00_Y00    ( glb2io_16_X00_Y00 ),
-        .glb2io_16_X01_Y00    ( glb2io_16_X01_Y00 ),
-        .glb2io_1_X00_Y00     ( glb2io_1_X00_Y00  ),
-        .glb2io_1_X01_Y00     ( glb2io_1_X01_Y00  ),
+        // .glb2io_16_X00_Y00    ( glb2io_16_X00_Y00 ),
+        // .glb2io_16_X01_Y00    ( glb2io_16_X01_Y00 ),
+        // .glb2io_1_X00_Y00     ( glb2io_1_X00_Y00  ),
+        // .glb2io_1_X01_Y00     ( glb2io_1_X01_Y00  ),
+        
+        // New inputs
+        .glb2io_16_X00_Y00    ( 0 ),
+        .glb2io_16_X01_Y00    ( 0 ),
+        .glb2io_1_X00_Y00     ( 0 ),
+        .glb2io_1_X01_Y00     ( 0 )
+
         // outputs
-        .io2glb_16_X00_Y00    ( io2glb_16_X00_Y00 ),
-        .io2glb_16_X01_Y00    ( io2glb_16_X01_Y00 ),
-        .io2glb_1_X00_Y00     ( io2glb_1_X00_Y00  ),
-        .io2glb_1_X01_Y00     ( io2glb_1_X01_Y00  )
+        // .io2glb_16_X00_Y00    ( io2glb_16_X00_Y00 ),
+        // .io2glb_16_X01_Y00    ( io2glb_16_X01_Y00 ),
+        // .io2glb_1_X00_Y00     ( io2glb_1_X00_Y00  ),
+        // .io2glb_1_X01_Y00     ( io2glb_1_X01_Y00  )
+        
         // not used
         // .glb2io_16_X02_Y00    ( 16'd0 ), // not used
         // .glb2io_16_X03_Y00    ( 16'd0 ), // not used
@@ -274,11 +282,11 @@ assign POHAN_BUF_CGRA_stall = POHAN_BUF_CGRA_stall_stage_7; // Assign the output
     // assign io_oeb[35]  = 1'b1; // io_reset
     // assign io_oeb[36]  = 1'b0; // config done
     // assign io_oeb[37]  = 1'b0; // test
-    assign io_oeb = la_data_in[37:0];
+    // assign io_oeb = la_data_in[37:0];
 
     // Unused
-    assign irq = 3'b000;
-    assign la_data_out = 128'd0;
+    // assign irq = 3'b000;
+    // assign la_data_out = 128'd0;
 
 endmodule
 
